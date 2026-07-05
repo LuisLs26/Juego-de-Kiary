@@ -1,0 +1,659 @@
+/* ==========================================
+   AVENTURA PARA KIARY — PREMIUM STYLES
+   ========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+
+:root {
+    --primary-pink: #ff85b3;      /* Rose pink */
+    --primary-purple: #ec4899;    /* Deep hot pink */
+    --accent-gold: #fbcfe8;       /* Pastel pink */
+    --accent-cyan: #fda4af;       /* Rose-gold pink */
+    --danger: #f43f5e;            /* Rose red */
+    --success: #ff85b3;           /* Rose pink */
+
+    --glass-bg: rgba(253, 244, 245, 0.15);
+    --glass-bg-strong: rgba(253, 224, 230, 0.25); /* Pink tinted glass */
+    --glass-border: rgba(253, 164, 186, 0.3);      /* Pink border */
+    --glass-shadow: rgba(136, 19, 55, 0.15);       /* Rose shadows */
+
+    --text-light: #fff5f7;
+    --text-muted: #ffe4e6;
+    --text-dark: #4c0519;
+}
+
+/* ---- RESET & BASE ---- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #4c0519; /* Deep pink-night background */
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- GAME CONTAINER ---- */
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+/* ==========================================
+   HUD (Heads Up Display)
+   ========================================== */
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 20px;
+    z-index: 20;
+    pointer-events: none;
+}
+
+#health-bar {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.heart {
+    font-size: 28px;
+    filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.5));
+    transition: all 0.3s ease;
+    animation: heartPulse 1.5s ease-in-out infinite;
+}
+
+.heart:nth-child(2) { animation-delay: 0.2s; }
+.heart:nth-child(3) { animation-delay: 0.4s; }
+
+.heart.lost {
+    filter: grayscale(1) opacity(0.3);
+    animation: heartLost 0.4s ease forwards;
+}
+
+#lays-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 18px;
+    border-radius: 50px;
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 4px 20px var(--glass-shadow),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+    color: var(--accent-gold);
+    font-weight: 800;
+    font-size: 18px;
+    pointer-events: auto;
+}
+
+.chip-icon {
+    font-size: 22px;
+    animation: chipBounce 2s ease-in-out infinite;
+}
+
+#chips-count {
+    min-width: 20px;
+    text-align: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 22px;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+/* ---- PROGRESS BAR ---- */
+#progress-container {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(280px, 60vw);
+    z-index: 20;
+    pointer-events: none;
+}
+
+#progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+#progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-pink), var(--primary-purple), var(--accent-cyan));
+    background-size: 200% 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    animation: progressGlow 3s linear infinite;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+#progress-text {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* ==========================================
+   TOUCH CONTROLS
+   ========================================== */
+#controls {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 20px;
+    z-index: 15;
+    transition: opacity 0.5s ease;
+}
+
+.control-group {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+}
+
+.btn {
+    width: 68px;
+    height: 68px;
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--glass-border);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 15px var(--glass-shadow),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent);
+    pointer-events: none;
+}
+
+.btn:active, .btn.pressed {
+    transform: scale(0.88);
+    background: rgba(255, 126, 179, 0.3);
+    border-color: var(--primary-pink);
+    box-shadow: 0 0 20px rgba(255, 126, 179, 0.4),
+                inset 0 0 15px rgba(255, 126, 179, 0.2);
+}
+
+.btn svg {
+    width: 30px;
+    height: 30px;
+    fill: rgba(255, 255, 255, 0.85);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
+.btn-jump {
+    width: 80px;
+    height: 80px;
+    border-color: rgba(52, 211, 153, 0.4);
+}
+
+.btn-jump:active, .btn-jump.pressed {
+    background: rgba(52, 211, 153, 0.3);
+    border-color: var(--success);
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.4),
+                inset 0 0 15px rgba(52, 211, 153, 0.2);
+}
+
+.btn-jump svg {
+    width: 34px;
+    height: 34px;
+}
+
+.btn-shoot {
+    border-color: rgba(34, 211, 238, 0.4);
+}
+
+.btn-shoot:active, .btn-shoot.pressed {
+    background: rgba(34, 211, 238, 0.3);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.4),
+                inset 0 0 15px rgba(34, 211, 238, 0.2);
+}
+
+.btn-shoot-icon {
+    font-size: 28px;
+    filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.5));
+}
+
+/* ==========================================
+   OVERLAYS (Start, Death, Victory, Messages)
+   ========================================== */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    text-align: center;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+.overlay.active {
+    display: flex;
+    animation: fadeIn 0.4s ease;
+}
+
+.overlay-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* ---- START SCREEN ---- */
+#start-screen {
+    background: linear-gradient(135deg, #4c0519 0%, #881337 40%, #db2777 75%, #fbcfe8 100%);
+    z-index: 200;
+}
+
+#start-screen.active {
+    display: flex;
+}
+
+.start-content {
+    position: relative;
+    z-index: 1;
+}
+
+.start-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(36px, 8vw, 64px);
+    background: linear-gradient(135deg, #ff85b3, #ec4899, #f43f5e, #fbcfe8);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 4s ease infinite;
+    text-shadow: none;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.start-subtitle {
+    font-size: clamp(14px, 3vw, 20px);
+    color: var(--text-muted);
+    margin-bottom: 40px;
+    font-weight: 600;
+}
+
+.start-emoji {
+    font-size: clamp(50px, 12vw, 80px);
+    display: block;
+    margin-bottom: 20px;
+    animation: float 3s ease-in-out infinite;
+}
+
+.start-btn {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary-pink), var(--primary-purple));
+    color: white;
+    border: none;
+    padding: 16px 48px;
+    border-radius: 50px;
+    font-size: 20px;
+    font-weight: 800;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4),
+                0 2px 10px rgba(255, 126, 179, 0.3);
+    transition: all 0.3s ease;
+    animation: pulse 2s ease-in-out infinite;
+    letter-spacing: 0.5px;
+}
+
+.start-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 40px rgba(168, 85, 247, 0.5);
+}
+
+.start-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.start-keys-hint {
+    margin-top: 30px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.8;
+}
+
+.key-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0 2px;
+    vertical-align: middle;
+}
+
+/* ---- MESSAGE BOX ---- */
+.message-box {
+    position: relative;
+    z-index: 1;
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 36px 30px;
+    border-radius: 24px;
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    max-width: 420px;
+    width: 90%;
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.message-box h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 24px;
+    margin-bottom: 14px;
+    line-height: 1.3;
+}
+
+.message-box p {
+    font-size: 16px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.continue-btn {
+    background: linear-gradient(135deg, var(--primary-pink), var(--primary-purple));
+    color: white;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 50px;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+    transition: all 0.2s ease;
+}
+
+.continue-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(168, 85, 247, 0.45);
+}
+
+.continue-btn:active {
+    transform: translateY(1px) scale(0.97);
+}
+
+/* ---- DEATH SCREEN ---- */
+.death-title {
+    color: var(--danger);
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.death-emoji {
+    font-size: 50px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* ---- VICTORY SCREEN ---- */
+.victory-box {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.victory-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(28px, 6vw, 42px);
+    background: linear-gradient(135deg, var(--accent-gold), var(--primary-pink), var(--accent-cyan));
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 3s ease infinite;
+    margin-bottom: 12px;
+}
+
+.victory-subtitle {
+    font-size: 18px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.victory-stats {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin: 24px 0;
+}
+
+.stat-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 14px 20px;
+    min-width: 80px;
+}
+
+.stat-value {
+    font-family: 'Fredoka One', cursive;
+    font-size: 28px;
+    color: var(--accent-gold);
+    display: block;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.victory-emoji {
+    font-size: 60px;
+    display: block;
+    margin-bottom: 16px;
+    animation: float 2s ease-in-out infinite;
+}
+
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+@keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@keyframes heartLost {
+    0% { transform: scale(1.3); }
+    50% { transform: scale(0.8) rotate(-15deg); }
+    100% { transform: scale(0.9); filter: grayscale(1) opacity(0.25); }
+}
+
+@keyframes chipBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+@keyframes chipCollect {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.5); color: #fff; }
+    100% { transform: scale(1); }
+}
+
+@keyframes progressGlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes starSparkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+/* Hide touch controls on desktop wider screens only */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+    #controls {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+
+/* Small screens */
+@media (max-width: 480px) {
+    #hud {
+        padding: 10px 14px;
+    }
+
+    .heart {
+        font-size: 22px;
+    }
+
+    #lays-counter {
+        padding: 6px 14px;
+        font-size: 15px;
+    }
+
+    #chips-count {
+        font-size: 18px;
+    }
+
+    .btn {
+        width: 58px;
+        height: 58px;
+    }
+
+    .btn-jump {
+        width: 70px;
+        height: 70px;
+    }
+
+    .control-group {
+        gap: 10px;
+    }
+
+    #progress-container {
+        top: 56px;
+    }
+}
+
+/* Landscape mobile */
+@media (max-height: 450px) {
+    #controls {
+        bottom: 10px;
+    }
+
+    .btn {
+        width: 52px;
+        height: 52px;
+    }
+
+    .btn-jump {
+        width: 62px;
+        height: 62px;
+    }
+
+    #hud {
+        padding: 8px 12px;
+    }
+
+    #progress-container {
+        top: 50px;
+    }
+}

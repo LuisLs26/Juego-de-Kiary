@@ -3,400 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Aventura para Kiary - Un juego de plataformas lleno de magia y amor 💖">
     <title>Aventura para Kiary 💖</title>
-    <style>
-        :root {
-            --primary-pink: #ffb7b2;
-            --soft-white: #ffffff;
-            --text-color: #5d576b;
-            --ground-green: #6EDC8B; 
-            --dirt-brown: #cd853f;
-        }
-
-        body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            overflow: hidden;
-            background-color: #ffecd2;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            user-select: none;
-            touch-action: none;
-        }
-
-        #game-container {
-            position: relative;
-            width: 100vw; height: 100vh;
-            display: flex; flex-direction: column;
-        }
-
-        /* CONTADOR DE PAPAS LAYS */
-        #lays-counter {
-            position: absolute;
-            top: 20px; left: 20px;
-            z-index: 20;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px 20px;
-            border-radius: 20px;
-            border: 3px solid #f1c40f;
-            font-weight: bold;
-            color: #d35400;
-            font-size: 18px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        canvas { flex-grow: 1; display: block; }
-
-        #controls {
-            position: absolute; bottom: 80px; 
-            width: 100%; display: flex;
-            justify-content: space-around; align-items: center;
-            padding: 0 20px; box-sizing: border-box; z-index: 15;
-        }
-
-        .control-group { display: flex; gap: 20px; align-items: flex-end; }
-
-        .btn {
-            width: 75px; height: 75px;
-            background: rgba(255, 255, 255, 0.8);
-            border: 4px solid var(--primary-pink);
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 6px 0 var(--primary-pink);
-            transition: all 0.1s;
-        }
-
-        .btn:active { transform: translateY(6px); box-shadow: 0 0 0 var(--primary-pink); }
-        .btn svg { width: 35px; height: 35px; fill: #ff7b89; }
-
-        .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 236, 210, 0.95);
-            display: none; flex-direction: column;
-            justify-content: center; align-items: center;
-            z-index: 100; text-align: center; padding: 30px; box-sizing: border-box;
-        }
-
-        .message-box {
-            background: white; padding: 40px 25px;
-            border-radius: 30px; border: 4px solid var(--primary-pink);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 90%;
-        }
-
-        .continue-btn {
-            background: #ff7b89; color: white; border: none;
-            padding: 15px 40px; border-radius: 30px;
-            font-size: 18px; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(255, 123, 137, 0.3);
-            cursor: pointer;
-        }
-
-        #final-screen { color: #ff4757; font-size: 28px; font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="game-container">
-    <div id="lays-counter">🍟 Papas: <span id="chips-count">0</span></div>
-    
+
+    <!-- === CANVAS === -->
     <canvas id="gameCanvas"></canvas>
 
-    <div id="controls">
-        <div class="control-group">
-            <div class="btn" id="btn-left"><svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg></div>
-            <div class="btn" id="btn-right"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></div>
+    <!-- === HUD === -->
+    <div id="hud">
+        <div id="health-bar">
+            <span class="heart" id="heart-1">❤️</span>
+            <span class="heart" id="heart-2">❤️</span>
+            <span class="heart" id="heart-3">❤️</span>
         </div>
-        <div class="control-group">
-            <div class="btn" id="btn-shoot" style="font-size: 35px; border-color: #00BFFF; box-shadow: 0 6px 0 #00BFFF;">🔫</div>
-            <div class="btn" id="btn-jump" style="width: 90px; height: 90px;"><svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></div>
+        <div id="lays-counter">
+            <span class="chip-icon">🍟</span>
+            <span id="chips-count">0</span>
         </div>
     </div>
 
+    <!-- === PROGRESS BAR === -->
+    <div id="progress-container">
+        <div id="progress-bar-bg">
+            <div id="progress-fill"></div>
+        </div>
+        <div id="progress-text">🏰 Castillo</div>
+    </div>
+
+    <!-- === TOUCH CONTROLS === -->
+    <div id="controls">
+        <div class="control-group">
+            <div class="btn" id="btn-left" role="button" aria-label="Mover izquierda">
+                <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+            </div>
+            <div class="btn" id="btn-right" role="button" aria-label="Mover derecha">
+                <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </div>
+        </div>
+        <div class="control-group">
+            <div class="btn btn-shoot" id="btn-shoot" role="button" aria-label="Disparar">
+                <span class="btn-shoot-icon">💫</span>
+            </div>
+            <div class="btn btn-jump" id="btn-jump" role="button" aria-label="Saltar">
+                <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- === START SCREEN === -->
+    <div id="start-screen" class="overlay active">
+        <div class="start-content">
+            <span class="start-emoji">👸✨</span>
+            <h1 class="start-title">Aventura para Kiary</h1>
+            <p class="start-subtitle">Un viaje mágico lleno de amor y valentía</p>
+            <button class="start-btn" id="start-btn" onclick="startGame()">
+                ¡Jugar! 🎮
+            </button>
+            <div class="start-keys-hint">
+                <span class="key-badge">← →</span> o <span class="key-badge">A D</span> Mover &nbsp;
+                <span class="key-badge">Espacio</span> Saltar &nbsp;
+                <span class="key-badge">X</span> Disparar
+            </div>
+        </div>
+    </div>
+
+    <!-- === NPC MESSAGE OVERLAY === -->
     <div id="msgOverlay" class="overlay">
+        <div class="overlay-backdrop"></div>
         <div class="message-box">
-            <p id="msgContent" style="font-size: 18px; color: #5d576b; margin-bottom: 30px;"></p>
+            <p id="msgContent"></p>
             <button class="continue-btn" onclick="closeMsg()">Continuar ❤️</button>
         </div>
     </div>
 
+    <!-- === DEATH OVERLAY === -->
     <div id="deathOverlay" class="overlay">
+        <div class="overlay-backdrop"></div>
         <div class="message-box">
-            <h2 style="color: #ff4757; margin-bottom: 20px;">¡Oh no, Kiary!</h2>
-            <p style="margin-bottom: 30px; color: #5d576b;">Te ha atrapado un cuervo.</p>
-            <button class="continue-btn" onclick="retry()">Volver ➔</button>
+            <span class="death-emoji">😢</span>
+            <h2 class="death-title">¡Oh no, Kiary!</h2>
+            <p>Un enemigo te ha atrapado. ¡Pero puedes volver a intentarlo!</p>
+            <button class="continue-btn" onclick="retry()">Reintentar 💪</button>
         </div>
     </div>
 
+    <!-- === VICTORY OVERLAY === -->
     <div id="finalOverlay" class="overlay">
-        <div id="final-screen">
-            ¡Lo lograste, Kiary! 💙
-            <span style="display: block; font-size: 18px; color: #5d576b; margin-top: 10px;">Llegaste sana y salva al castillo.</span>
+        <div class="overlay-backdrop"></div>
+        <div class="victory-box">
+            <span class="victory-emoji">🏰👸🎉</span>
+            <h1 class="victory-title">¡Lo lograste, Kiary!</h1>
+            <p class="victory-subtitle">Llegaste sana y salva al castillo 💙</p>
+            <div class="victory-stats">
+                <div class="stat-card">
+                    <span class="stat-value" id="final-chips">0</span>
+                    <span class="stat-label">Papas</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="final-hearts">3</span>
+                    <span class="stat-label">Vidas</span>
+                </div>
+            </div>
+            <button class="continue-btn" onclick="restartGame()">Jugar de Nuevo 🔄</button>
         </div>
     </div>
+
+    <!-- === BOSS DEFEATED OVERLAY === -->
+    <div id="bossOverlay" class="overlay">
+        <div class="overlay-backdrop"></div>
+        <div class="message-box">
+            <h2 style="color: var(--accent-gold);">⚔️ ¡Maléfica Derrotada!</h2>
+            <p>¡Lo hiciste! El camino al castillo está libre. ¡Corre Kiary!</p>
+            <button class="continue-btn" onclick="closeBossMsg()">¡Adelante! 🏰</button>
+        </div>
+    </div>
+
 </div>
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    let gameState = 'playing';
-    let cameraX = 0;
-    let time = 0;
-    let chipsCollected = 0;
-
-    const gravity = 0.6;
-    const speed = 4.5;
-    const jumpPower = -12;
-
-    let bullets = [];
-    let chips = []; // Papas Lays
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    const player = {
-        x: 100, y: 0, w: 40, h: 60,
-        vx: 0, vy: 0, jumps: 0, grounded: false, dir: 1 
-    };
-
-    const groundLevel = canvas.height - 250; 
-    player.y = groundLevel - 60;
-
-    const npcMaluma = {
-        x: 2300, y: groundLevel - 60, w: 40, h: 60, triggered: false,
-        msg: "Hola Princesa Kiary, soy el Principe Maluma Baby, que guapa estás hoy, escuché que Maléfica invadió tu castillo!"
-    };
-
-    const maleficent = {
-        x: 3500, y: groundLevel - 150, w: 100, h: 150, hp: 10, maxHp: 10
-    };
-
-    const platforms = [
-        { x: -1000, y: groundLevel, w: 8000, h: 300, type: 'ground' },
-        { x: 500, y: groundLevel - 120, w: 150, h: 25, type: 'floating' },
-        { x: 800, y: groundLevel - 220, w: 150, h: 25, type: 'floating' },
-        { x: 1100, y: groundLevel - 100, w: 250, h: 15, type: 'bridge' },
-        { x: 1450, y: groundLevel - 180, w: 50, h: 40, type: 'block' },
-        { x: 1600, y: groundLevel - 180, w: 50, h: 40, type: 'block' },
-        { x: 1850, y: groundLevel - 120, w: 150, h: 25, type: 'floating' },
-        { x: 2150, y: groundLevel - 240, w: 200, h: 15, type: 'bridge' },
-        { x: 2500, y: groundLevel - 150, w: 100, h: 25, type: 'floating' },
-        { x: 2800, y: groundLevel - 80, w: 80, h: 25, type: 'floating' },
-        { x: 3000, y: groundLevel - 160, w: 80, h: 25, type: 'floating' },
-        { x: 3200, y: groundLevel - 240, w: 80, h: 25, type: 'floating' },
-        { x: 3500, y: groundLevel - 120, w: 300, h: 15, type: 'bridge' } 
-    ];
-
-    // GENERAR PAPAS LAYS SOBRE PLATAFORMAS
-    platforms.forEach(p => {
-        if(p.x > 300) {
-            chips.push({ x: p.x + p.w/2 - 10, y: p.y - 50, w: 25, h: 25, collected: false });
-        }
-    });
-
-    let crows = [
-        { x: 900, y: groundLevel - 30, w: 30, h: 30, vx: 1.0, startX: 900, range: 150 }, 
-        { x: 1200, y: groundLevel - 130, w: 30, h: 30, vx: -1.0, startX: 1200, range: 100 }, 
-        { x: 1700, y: groundLevel - 350, w: 30, h: 30, vx: 0.7, startX: 1700, range: 250 }, 
-        { x: 2700, y: groundLevel - 30, w: 30, h: 30, vx: -1.2, startX: 2700, range: 200 }, 
-        { x: 3100, y: groundLevel - 350, w: 30, h: 30, vx: -0.7, startX: 3100, range: 300 }
-    ];
-
-    const castle = { x: 4000, y: groundLevel - 150, w: 150, h: 150 };
-    const butterflyColors = ['#ff99cc', '#b399ff', '#99ccff', '#ffff99', '#ffb366'];
-
-    const input = { left: false, right: false };
-    function setupTouch(id, key) {
-        const btn = document.getElementById(id);
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); input[key] = true; });
-        btn.addEventListener('touchend', (e) => { e.preventDefault(); input[key] = false; });
-    }
-    setupTouch('btn-left', 'left');
-    setupTouch('btn-right', 'right');
-    
-    document.getElementById('btn-jump').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (player.jumps < 2) {
-            player.vy = jumpPower; player.jumps++; player.grounded = false;
-        }
-    });
-
-    document.getElementById('btn-shoot').addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        // AHORA LAS BALAS TIENEN CUERPO (W y H) PARA QUE DETECTEN EL GOLPE
-        bullets.push({ x: player.x + 20, y: player.y + 35, vx: player.dir * 12, w: 15, h: 15 });
-    });
-
-    function closeMsg() { document.getElementById('msgOverlay').style.display = 'none'; gameState = 'playing'; }
-
-    function retry() {
-        document.getElementById('deathOverlay').style.display = 'none';
-        player.x = 100; player.y = groundLevel - 60; player.vy = 0; cameraX = 0;
-        gameState = 'playing';
-    }
-
-    function drawPrincess(x, y) {
-        ctx.save(); ctx.translate(x, y);
-        let b = Math.sin(time * 5) * 2;
-        ctx.fillStyle = "#ff99cc"; ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(40, 50); ctx.lineTo(50, 60); ctx.lineTo(-10, 60); ctx.fill();
-        ctx.fillStyle = "#ffc1e3"; ctx.fillRect(5, 25 + b, 30, 25);
-        ctx.fillStyle = "#ffe0bd"; ctx.beginPath(); ctx.arc(20, 15 + b, 15, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#8b4513"; ctx.beginPath(); ctx.arc(20, 12 + b, 16, Math.PI, 0); ctx.fill();
-        ctx.fillRect(4, 12 + b, 8, 20); ctx.fillRect(28, 12 + b, 8, 20);
-        ctx.fillStyle = "#ffd700"; ctx.beginPath(); ctx.moveTo(10, 5 + b); ctx.lineTo(15, 10 + b); ctx.lineTo(20, 5 + b); ctx.lineTo(25, 10 + b); ctx.lineTo(30, 5 + b); ctx.lineTo(30, 12 + b); ctx.lineTo(10, 12 + b); ctx.fill();
-        ctx.font = "20px Arial";
-        if (player.dir === -1) { ctx.save(); ctx.scale(-1, 1); ctx.fillText("🔫", -35, 42 + b); ctx.restore(); }
-        else { ctx.fillText("🔫", 25, 42 + b); }
-        ctx.restore();
-    }
-
-    function drawMaluma(x, y) {
-        ctx.save(); ctx.translate(x, y);
-        let b = Math.sin(time * 3) * 1.5;
-        ctx.fillStyle = "#ff4757"; ctx.font = "bold 12px Arial"; ctx.fillText("Principe Maluma", -20, -15 + b);
-        ctx.fillStyle = "#2d3436"; ctx.fillRect(5, 25 + b, 30, 35);
-        ctx.fillStyle = "#ffffff"; ctx.fillRect(15, 25 + b, 10, 35);
-        ctx.fillStyle = "#f1c40f"; ctx.fillRect(18, 30 + b, 4, 8);
-        ctx.fillStyle = "#f1c27d"; ctx.beginPath(); ctx.arc(20, 15 + b, 15, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#3e2723"; ctx.beginPath(); ctx.arc(20, 16 + b, 15, 0, Math.PI); ctx.fill();
-        ctx.fillStyle = "#f1c27d"; ctx.beginPath(); ctx.arc(20, 14 + b, 11, 0, Math.PI); ctx.fill();
-        ctx.fillStyle = "#3e2723"; ctx.beginPath(); ctx.arc(20, 12 + b, 15, Math.PI, 0); ctx.fill();
-        ctx.fillRect(10, -3 + b, 15, 5); ctx.fillStyle = "#000000"; ctx.fillRect(8, 10 + b, 10, 5); ctx.fillRect(22, 10 + b, 10, 5);
-        ctx.restore();
-    }
-
-    function drawMaleficent(m) {
-        if (m.hp <= 0) return;
-        ctx.save(); ctx.translate(m.x, m.y);
-        let anim = Math.sin(time * 2) * 8; 
-        ctx.fillStyle = "#ff4757"; ctx.font = "bold 16px Arial"; ctx.fillText("Maléfica", 20, -45);
-        ctx.fillStyle = "black"; ctx.fillRect(0, -30, m.w, 10);
-        ctx.fillStyle = "#ff4757"; ctx.fillRect(0, -30, (m.hp / m.maxHp) * m.w, 10);
-        ctx.fillStyle = "#000000"; ctx.beginPath(); ctx.moveTo(0, m.h); ctx.lineTo(m.w, m.h); ctx.lineTo(m.w - 10, 60); ctx.lineTo(10, 60); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(10, 60); ctx.lineTo(m.w - 10, 60); ctx.lineTo(m.w + 15, 15); ctx.lineTo(m.w/2, 45); ctx.lineTo(-15, 15); ctx.fill();
-        ctx.fillStyle = "#dcdde1"; ctx.beginPath(); ctx.arc(m.w/2, 35, 20, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#000000"; ctx.beginPath(); ctx.moveTo(40, 25); ctx.quadraticCurveTo(15, -15, 25, -45); ctx.quadraticCurveTo(20, -10, 40, 25); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(60, 25); ctx.quadraticCurveTo(85, -15, 75, -45); ctx.quadraticCurveTo(80, -10, 60, 25); ctx.fill();
-        ctx.fillStyle = "#3e2723"; ctx.fillRect(m.w + 5, 25 + anim, 5, 120);
-        ctx.fillStyle = "#2ecc71"; ctx.beginPath(); ctx.arc(m.w + 7.5, 25 + anim, 10, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-    }
-
-    function drawChip(c) {
-        if (c.collected) return;
-        ctx.save(); ctx.translate(c.x, c.y);
-        ctx.fillStyle = "#f1c40f"; ctx.fillRect(0, 0, c.w, c.h); // Cuadrado amarillo
-        ctx.fillStyle = "red"; ctx.beginPath(); ctx.arc(c.w/2, c.h/2, 6, 0, Math.PI * 2); ctx.fill(); // Circulo rojo
-        ctx.restore();
-    }
-
-    function drawCrow(c) {
-        ctx.save(); ctx.translate(c.x, c.y);
-        if (c.vx > 0) { ctx.scale(-1, 1); ctx.translate(-c.w, 0); }
-        let wingFlap = Math.sin(time * 8) * 12;
-        let headBob = Math.cos(time * 5) * 1.5;
-        ctx.fillStyle = "#2c3e50"; ctx.beginPath(); ctx.moveTo(15, 10 + wingFlap); ctx.quadraticCurveTo(5, 0 + wingFlap, -5 - wingFlap, 18); ctx.quadraticCurveTo(5, 25 - wingFlap, 15, 15 + wingFlap); ctx.fill();
-        ctx.fillStyle = "#1a1a1a"; ctx.beginPath(); ctx.moveTo(25, 20); ctx.quadraticCurveTo(15, 32, 5, 20); ctx.quadraticCurveTo(-2, 12, 5, 8 + headBob); ctx.quadraticCurveTo(12, 2 + headBob, 20, 10 + headBob); ctx.quadraticCurveTo(30, 20, 25, 20); ctx.fill();
-        ctx.fillStyle = "#333333"; ctx.beginPath(); ctx.moveTo(2, 6 + headBob); ctx.quadraticCurveTo(-10, 4 + headBob, -15, 10 + headBob); ctx.quadraticCurveTo(-5, 12 + headBob, 2, 10 + headBob); ctx.fill();
-        ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(8, 8 + headBob, 1, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-    }
-
-    function checkCollision(r1, r2) {
-        return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x && r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
-    }
-
-    function update() {
-        if (gameState !== 'playing') return;
-        time += 0.05;
-        if (input.left) { player.vx = -speed; player.dir = -1; }
-        else if (input.right) { player.vx = speed; player.dir = 1; }
-        else player.vx = 0;
-        player.x += player.vx; player.vy += gravity; player.y += player.vy;
-
-        if (!npcMaluma.triggered && checkCollision(player, npcMaluma)) {
-            npcMaluma.triggered = true; gameState = 'paused';
-            document.getElementById('msgContent').innerText = npcMaluma.msg;
-            document.getElementById('msgOverlay').style.display = 'flex';
-        }
-
-        if (maleficent.hp > 0 && player.x + 30 > maleficent.x) player.x = maleficent.x - 30;
-
-        for (let i = bullets.length - 1; i >= 0; i--) {
-            let b = bullets[i]; b.x += b.vx;
-            if (maleficent.hp > 0 && checkCollision(b, maleficent)) {
-                maleficent.hp--; bullets.splice(i, 1); continue;
-            }
-            for (let j = crows.length - 1; j >= 0; j--) {
-                let c = crows[j];
-                if (checkCollision(b, c)) { crows.splice(j, 1); bullets.splice(i, 1); break; }
-            }
-            if (bullets[i] && (bullets[i].x > cameraX + canvas.width || bullets[i].x < cameraX)) bullets.splice(i, 1);
-        }
-
-        chips.forEach(c => {
-            if (!c.collected && checkCollision(player, c)) {
-                c.collected = true; chipsCollected++;
-                document.getElementById('chips-count').innerText = chipsCollected;
-            }
-        });
-
-        for (let i = crows.length - 1; i >= 0; i--) {
-            let c = crows[i]; c.x += c.vx;
-            if (Math.abs(c.x - c.startX) > c.range) c.vx *= -1;
-            if (checkCollision(player, c)) { gameState = 'dead'; document.getElementById('deathOverlay').style.display = 'flex'; }
-        }
-
-        player.grounded = false;
-        platforms.forEach(p => {
-            if (player.x + 30 > p.x && player.x + 10 < p.x + p.w && player.y + player.h > p.y && player.y + player.h < p.y + p.h + 20 && player.vy >= 0) {
-                player.y = p.y - player.h; player.vy = 0; player.grounded = true; player.jumps = 0;
-            }
-        });
-        if (player.y > canvas.height + 200) { gameState = 'dead'; document.getElementById('deathOverlay').style.display = 'flex'; }
-        if (player.x > castle.x) { gameState = 'ended'; document.getElementById('finalOverlay').style.display = 'flex'; }
-        cameraX = player.x - canvas.width / 3;
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        grad.addColorStop(0, "#a0d8ef"); grad.addColorStop(1, "#ffe0bd");
-        ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        for(let i=0; i<7; i++) {
-            let bx = (i * 300 + time * 35) % (canvas.width + 500) - 150;
-            let by = 120 + Math.sin(time * 1.5 + i) * 40;
-            ctx.save(); ctx.translate(bx, by);
-            let flap = Math.abs(Math.sin(time * 8 + i)); 
-            ctx.fillStyle = butterflyColors[i % butterflyColors.length];
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-15 * flap, -15, -10 * flap, -5); ctx.quadraticCurveTo(-15 * flap, 10, 0, 5); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(15 * flap, -15, 10 * flap, -5); ctx.quadraticCurveTo(15 * flap, 10, 0, 5); ctx.fill();
-            ctx.restore();
-        }
-
-        ctx.save(); ctx.translate(-cameraX, 0);
-        platforms.forEach(p => {
-            ctx.fillStyle = "#cd853f"; ctx.fillRect(p.x, p.y + 10, p.w, p.h - 10);
-            ctx.fillStyle = "#6EDC8B"; ctx.fillRect(p.x, p.y, p.w, 15);
-        });
-        ctx.font = "100px Arial"; ctx.fillText("🏰", castle.x, castle.y + 100);
-        
-        chips.forEach(drawChip);
-        drawMaleficent(maleficent);
-        drawMaluma(npcMaluma.x, npcMaluma.y);
-        drawPrincess(player.x, player.y);
-        crows.forEach(drawCrow);
-        ctx.fillStyle = "#00BFFF"; bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); ctx.fill(); });
-        ctx.restore();
-    }
-
-    function loop() { update(); draw(); requestAnimationFrame(loop); }
-    loop();
-</script>
+<script src="game.js"></script>
 </body>
-  </html>
-
+</html>
