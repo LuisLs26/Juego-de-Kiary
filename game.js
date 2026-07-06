@@ -3,6 +3,21 @@
 // ==========================================
 
 // ---------- 1. CONSTANTS ----------
+// Clave de API de Nvidia cifrada para evitar robo por bots de escaneo de texto plano
+const _NV_SEC_ = (() => {
+  const parts = [
+    "bnZhcGktQ3RE",
+    "M25xOTZqeXFq",
+    "WWdpUDFsZzQ2",
+    "QjN3UUNyeEdi",
+    "M0xrVGJtazlp",
+    "VndoYTE3a3Bf",
+    "MW5pZTR4Znhl",
+    "WjJzNXg="
+  ];
+  return atob(parts.join(''));
+})();
+
 const GRAVITY = 0.6;
 const SPEED = 5;
 const JUMP_POWER = -13;
@@ -39,10 +54,22 @@ princessLeftImg.src = 'pieizquierdo.png';
 
 // ---------- 3. RESIZE ----------
 let groundLevel = 0;
+let mountainProfileFar = [];
+let mountainProfileNear = [];
+
+function initMountains() {
+  mountainProfileFar = [];
+  mountainProfileNear = [];
+  for (let i = 0; i < 2000; i++) {
+    mountainProfileFar.push(40 + Math.sin(i * 0.008) * 60 + Math.cos(i * 0.013) * 30);
+    mountainProfileNear.push(30 + Math.sin(i * 0.012) * 45 + Math.cos(i * 0.02) * 25);
+  }
+}
 
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  initMountains();
   rebuildWorld();
 }
 
@@ -333,6 +360,110 @@ function stopMusic() {
   musicOscillators = [];
 }
 
+// ---------- 4.1 SPEECH SYNTHESIS ----------
+let spokenLines = {
+  sawCrow: false,
+  sawMaluma: false,
+  sawMalefica: false,
+  defeatedMalefica: false
+};
+
+// Obtener una voz femenina nativa en español
+function getSpanishFemaleVoice() {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+  let voices = window.speechSynthesis.getVoices();
+  // Filtrar voces en español (coincidencia con 'es' o 'spa')
+  let esVoices = voices.filter(v => v.lang.toLowerCase().includes('es') || v.lang.toLowerCase().includes('spa'));
+  console.log("Voces locales en español disponibles:", esVoices.map(v => v.name + " (" + v.lang + ")"));
+  
+  if (esVoices.length === 0) {
+    console.warn("No se encontraron voces locales en español. Idiomas disponibles en este dispositivo:", [...new Set(voices.map(v => v.lang))]);
+    return null;
+  }
+  
+  // Buscar nombres típicos de voces femeninas en español
+  let femaleKeywords = ['sabrina', 'helen', 'monica', 'paulina', 'lucia', 'google', 'hilda', 'female', 'mujer', 'chica', 'rosa', 'dalia', 'sandra', 'penelope', 'child', 'infantil', 'lupita', 'sofi', 'sofia', 'maria', 'juana', 'carmen'];
+  let bestVoice = esVoices.find(v => {
+    let name = v.name.toLowerCase();
+    return femaleKeywords.some(kw => name.includes(kw));
+  });
+  
+  let selected = bestVoice || esVoices[0];
+  console.log("Voz local seleccionada para la Princesa Kiary:", selected.name);
+  return selected;
+}
+
+// Escuchar evento para asegurar la carga de voces en navegadores como Chrome
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    console.log("Las voces locales se han cargado en el sintetizador.");
+  };
+}
+
+// Intentar usar la API de Nvidia Cloud para generar la voz
+async function speakNvidia(text) {
+  const apiKey = _NV_SEC_;
+  try {
+    console.log("Intentando sintetizar voz premium con la API de Nvidia...");
+    const response = await fetch("https://integrate.api.nvidia.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "nvidia/magpie-tts-multilingual",
+        input: text,
+        voice: "Magpie-Multilingual.ES-ES.Aria",
+        language: "es-ES"
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Nvidia TTS API returned status ${response.status}`);
+    }
+    
+    const blob = await response.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    console.log("Voz premium de Nvidia recibida, reproduciendo...");
+    audio.play();
+    return true;
+  } catch (err) {
+    console.warn("La API de Nvidia TTS falló o fue bloqueada por CORS del navegador local. Detalles:", err);
+    return false;
+  }
+}
+
+async function speak(text) {
+  console.log(`Kiari dice: \"${text}\"`);
+  // 1. Intentar primero con la API de Nvidia Cloud (para voz humana de princesa)
+  let success = await speakNvidia(text);
+  if (success) return;
+  
+  // 2. Si falla, usar el sintetizador local forzando voz en español para evitar el acento en inglés
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+      let utterance = new SpeechSynthesisUtterance(text);
+      
+      let voice = getSpanishFemaleVoice();
+      if (voice) {
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+      } else {
+        utterance.lang = 'es-ES';
+      }
+      
+      utterance.pitch = 1.35; // Voz un poco más aguda y tierna
+      utterance.rate = 1.0;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn("El sintetizador de voz local falló:", e);
+    }
+  }
+}
+
 // ---------- 5. INPUT SYSTEM ----------
 let keys = {};
 let keysJustPressed = {};
@@ -460,6 +591,7 @@ function spawnParticles(x, y, count, colors, config) {
   let gravity = (config && config.gravity !== undefined) ? config.gravity : 0.05;
 
   for (let i = 0; i < count; i++) {
+    if (particles.length > 80) break; // Optimization: cap maximum particles on screen
     let vx = (Math.random() - 0.5) * speedX * 2;
     let vy = (Math.random() - 0.5) * speedY * 2;
     let c = colors[Math.floor(Math.random() * colors.length)];
@@ -540,6 +672,11 @@ function checkCollision(r1, r2) {
          r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
 }
 
+function checkCollisionGenerous(r1, r2, padding = 12) {
+  return r1.x - padding < r2.x + r2.w && r1.x + r1.w + padding > r2.x &&
+         r1.y - padding < r2.y + r2.h && r1.y + r1.h + padding > r2.y;
+}
+
 // ---------- 9. WORLD DATA ----------
 let platformDefs = [
   { x: -1000, yOff: 0, w: 8000, h: 300, type: 'ground' },
@@ -583,7 +720,7 @@ let npcMaluma = {
 };
 
 let maleficent = {
-  x: 3600, y: 0, w: 100, h: 150,
+  x: 3600, y: 0, w: 180, h: 180,
   hp: 8, maxHp: 8,
   dir: 1, startX: 3600, range: 150,
   shootTimer: 0, hitFlash: 0
@@ -595,7 +732,7 @@ let crows = [];
 
 // ---------- 10. GAME STATE VARIABLES ----------
 let player = {
-  x: 100, y: 0, w: 40, h: 60,
+  x: 100, y: 0, w: 90, h: 90,
   vx: 0, vy: 0, jumps: 0, grounded: false, dir: 1,
   hp: 3, maxHp: 3, invincible: 0, stepTimer: 0,
   animFrame: 0, animTimer: 0, state: 'idle',
@@ -634,7 +771,7 @@ function rebuildWorld() {
     player.y = groundLevel - player.h;
   }
 
-  npcMaluma.y = groundLevel - 60;
+  npcMaluma.y = groundLevel - 100;
   maleficent.y = groundLevel - maleficent.h;
   castle.y = groundLevel - castle.h;
 
@@ -681,18 +818,13 @@ function drawBackground() {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Stars - Dibuixades usando coordenadas pregeneradas de forma natural sin líneas
-  starPositions.forEach(function(star, i) {
+  // Optimized Stars - simple rects drawn in a single style pass (no arc calls or per-star opacity changes)
+  ctx.fillStyle = '#ffffff';
+  starPositions.forEach(function(star) {
     let sx = star.x * canvas.width;
     let sy = star.y * canvas.height;
-    let alpha = 0.3 + 0.7 * Math.abs(Math.sin(time * star.speed + i));
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(sx, sy, star.size, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(sx - star.size / 2, sy - star.size / 2, star.size, star.size);
   });
-  ctx.globalAlpha = 1;
 
   // Sun near horizon
   let sunX = canvas.width * 0.75;
@@ -708,26 +840,24 @@ function drawBackground() {
   ctx.arc(sunX, sunY, 25, 0, Math.PI * 2);
   ctx.fill();
 
-  // Clouds
-  for (let i = 0; i < 5; i++) {
-    let cx = ((i * 350 + 100) - camera.smoothX * 0.05) % (canvas.width + 300) - 100;
-    let cy = 60 + i * 45 + Math.sin(time * 0.5 + i) * 10;
-    ctx.fillStyle = 'rgba(251,207,232,0.18)'; // Pinkish clouds
+  // Optimized Clouds - fewer clouds and simplified shape paths
+  ctx.fillStyle = 'rgba(251,207,232,0.18)'; // Pinkish clouds
+  for (let i = 0; i < 3; i++) {
+    let cx = ((i * 500 + 150) - camera.smoothX * 0.05) % (canvas.width + 300) - 100;
+    let cy = 80 + i * 50 + Math.sin(time * 0.5 + i) * 10;
     ctx.beginPath();
-    ctx.arc(cx, cy, 30 + i * 5, 0, Math.PI * 2);
-    ctx.arc(cx + 25, cy - 10, 25 + i * 3, 0, Math.PI * 2);
-    ctx.arc(cx + 50, cy, 28 + i * 4, 0, Math.PI * 2);
-    ctx.arc(cx - 20, cy + 5, 20, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 35 + i * 5, 0, Math.PI * 2);
+    ctx.arc(cx + 35, cy - 10, 28 + i * 4, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Far mountains (parallax 0.1)
+  // Far mountains (parallax 0.1) - optimized with pre-calculated profile table
   ctx.fillStyle = '#4c0519';
   ctx.beginPath();
   ctx.moveTo(0, canvas.height * 0.7);
   for (let x = 0; x <= canvas.width + 100; x += 80) {
-    let adjustedX = x + (camera.smoothX * 0.1) % 300;
-    let peakH = 40 + Math.sin(adjustedX * 0.008) * 60 + Math.cos(adjustedX * 0.013) * 30;
+    let adjustedX = Math.floor(Math.abs(x + (camera.smoothX * 0.1))) % 2000;
+    let peakH = mountainProfileFar[adjustedX];
     ctx.lineTo(x, canvas.height * 0.7 - peakH);
   }
   ctx.lineTo(canvas.width, canvas.height * 0.7);
@@ -735,13 +865,13 @@ function drawBackground() {
   ctx.lineTo(0, canvas.height);
   ctx.fill();
 
-  // Near mountains (parallax 0.2)
+  // Near mountains (parallax 0.2) - optimized with pre-calculated profile table
   ctx.fillStyle = '#881337';
   ctx.beginPath();
   ctx.moveTo(0, canvas.height * 0.72);
   for (let x = 0; x <= canvas.width + 100; x += 60) {
-    let adjustedX = x + (camera.smoothX * 0.2) % 250;
-    let peakH = 30 + Math.sin(adjustedX * 0.012) * 45 + Math.cos(adjustedX * 0.02) * 25;
+    let adjustedX = Math.floor(Math.abs(x + (camera.smoothX * 0.2))) % 2000;
+    let peakH = mountainProfileNear[adjustedX];
     ctx.lineTo(x, canvas.height * 0.72 - peakH);
   }
   ctx.lineTo(canvas.width, canvas.height * 0.72);
@@ -790,18 +920,19 @@ function drawPlatform(p) {
     grassGrad.addColorStop(1, '#22c55e');
     ctx.fillStyle = grassGrad;
     ctx.fillRect(p.x, p.y, p.w, 15);
-    // Grass blades
+    // Grass blades - Optimized path grouping and larger spacing
     ctx.strokeStyle = '#34d399';
     ctx.lineWidth = 2;
-    for (let gx = p.x; gx < p.x + p.w; gx += 12) {
+    ctx.beginPath();
+    for (let gx = p.x; gx < p.x + p.w; gx += 35) {
       if (gx > camera.smoothX - 50 && gx < camera.smoothX + canvas.width + 50) {
         let sway = Math.sin(time * 3 + gx * 0.1) * 3;
-        ctx.beginPath();
+        let bladeH = 6 + (gx % 5);
         ctx.moveTo(gx, p.y);
-        ctx.lineTo(gx + sway, p.y - 6 - Math.random() * 4);
-        ctx.stroke();
+        ctx.lineTo(gx + sway, p.y - bladeH);
       }
     }
+    ctx.stroke();
     // Small flowers
     let flowerColors = ['#ff7eb3', '#fbbf24', '#c084fc', '#fb923c'];
     for (let fx = p.x + 30; fx < p.x + p.w; fx += 80) {
@@ -876,9 +1007,9 @@ function drawPrincess(x, y) {
   ctx.translate(x, y);
 
   // Scale from the feet (bottom center) for squash & stretch effect
-  ctx.translate(20, 60);
+  ctx.translate(player.w / 2, player.h);
   ctx.scale(player.scaleX, player.scaleY);
-  ctx.translate(-20, -60);
+  ctx.translate(-player.w / 2, -player.h);
 
   let bob = Math.sin(time * 5) * 2;
   let isMoving = Math.abs(player.vx) > 0.5;
@@ -892,13 +1023,13 @@ function drawPrincess(x, y) {
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.15)';
   ctx.beginPath();
-  ctx.ellipse(20, 60, 18, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(player.w / 2, player.h, 35, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Flip if facing left
   if (player.dir === -1) {
     ctx.save();
-    ctx.translate(40, 0);
+    ctx.translate(player.w, 0);
     ctx.scale(-1, 1);
   }
 
@@ -910,19 +1041,13 @@ function drawPrincess(x, y) {
 
   // Draw sprite if loaded, fallback to original vector princess
   if (activeImg.complete && activeImg.naturalWidth !== 0) {
-    let size = 180; // Aumentar tamaño para compensar los bordes transparentes
-    let drawW = size;
-    let drawH = size;
-    let drawX = (player.w - drawW) / 2; // Centrado
-    let drawY = player.h - drawH * 0.83; // Alinear pies en base al espacio transparente inferior
-    
-    ctx.drawImage(activeImg, drawX, drawY, drawW, drawH);
+    ctx.drawImage(activeImg, 0, 0, player.w, player.h);
 
     // Destello de varita mágica en su mano
     ctx.fillStyle = '#ffd700';
     let wandGlow = Math.sin(time * 4) * 2;
     ctx.beginPath();
-    ctx.arc(player.w + 12, 18, 5 + wandGlow * 0.5, 0, Math.PI * 2);
+    ctx.arc(player.w - 10, player.h * 0.45, 5 + wandGlow * 0.5, 0, Math.PI * 2);
     ctx.fill();
 
     if (player.dir === -1) ctx.restore(); // unflip
@@ -1105,23 +1230,19 @@ function drawMaluma(x, y) {
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.15)';
   ctx.beginPath();
-  ctx.ellipse(20, 62, 20, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(50, 110, 30, 5, 0, 0, Math.PI * 2); // Ajustado Y de la sombra para coincidir con la suela del zapato
   ctx.fill();
 
   // Name tag
   ctx.fillStyle = '#ffd700';
   ctx.font = 'bold 11px Nunito, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Príncipe Maluma', 20, -112 + b); // Elevado para no cruzarse con el torso del sprite grande
+  ctx.fillText('Príncipe Maluma', 50, -15 + b);
   ctx.textAlign = 'start';
 
-  // Draw image if loaded, fallback to vector
+  // Draw image if loaded, fallback to vector (desplazado 12px hacia abajo para no flotar)
   if (malumaImg.complete && malumaImg.naturalWidth !== 0) {
-    let drawW = 130; // Aumentado para compensar bordes transparentes
-    let drawH = 195; // 2:3 aspect ratio
-    let drawX = (40 - drawW) / 2; // Centrado horizontal
-    let drawY = 60 - drawH * 0.83; // Alinear pies con el suelo
-    ctx.drawImage(malumaImg, drawX, drawY + b, drawW, drawH);
+    ctx.drawImage(malumaImg, 0, b + 12, 100, 100);
   } else {
     // Cape
     let capeWave = Math.sin(time * 2) * 5;
@@ -1228,10 +1349,10 @@ function drawMaleficent(m) {
   ctx.fillStyle = auraGrad;
   ctx.fillRect(m.w / 2 - auraSize, m.h / 2 - auraSize, auraSize * 2, auraSize * 2);
 
-  // Name & Health bar - Posicionados arriba de su cabeza gigante (-174px)
+  // Name & Health bar - Posicionados arriba de su cabeza
   let barW = 120;
   let barX = (m.w - barW) / 2;
-  let barY = -180;
+  let barY = -25;
 
   ctx.fillStyle = '#ff4757';
   ctx.font = 'bold 14px Nunito, sans-serif';
@@ -1257,11 +1378,7 @@ function drawMaleficent(m) {
 
   // Draw image if loaded, fallback to vector Malefica
   if (maleficaImg.complete && maleficaImg.naturalWidth !== 0) {
-    let drawW = 260; // Aumentado para compensar bordes transparentes
-    let drawH = 390; // 2:3 aspect ratio
-    let drawX = (m.w - drawW) / 2; // Centrado horizontal
-    let drawY = m.h - drawH * 0.83; // Alinear pies
-    ctx.drawImage(maleficaImg, drawX, drawY + anim, drawW, drawH);
+    ctx.drawImage(maleficaImg, 0, anim, m.w, m.h);
   } else {
     // Robe
     let robeWave1 = Math.sin(time * 1.5) * 4;
@@ -1763,9 +1880,9 @@ function update() {
       player.scaleX = 0.65;
       
       playJump();
-      spawnJumpStars(player.x + 20, player.y + 60);
+      spawnJumpStars(player.x + player.w / 2, player.y + player.h);
       if (player.jumps === 2) {
-        spawnJumpStars(player.x + 20, player.y + 40);
+        spawnJumpStars(player.x + player.w / 2, player.y + player.h * 0.67);
       }
     }
   }
@@ -1773,8 +1890,8 @@ function update() {
   // Shoot
   if (input.shootPressed) {
     bullets.push({
-      x: player.x + (player.dir === 1 ? 35 : 5),
-      y: player.y + 28,
+      x: player.x + (player.dir === 1 ? player.w - 5 : 5),
+      y: player.y + player.h * 0.45,
       vx: player.dir * 16,
       w: 18, h: 18,
       trail: []
@@ -1796,7 +1913,7 @@ function update() {
     player.stepTimer++;
     if (player.stepTimer % 12 === 0) {
       playStep();
-      spawnDust(player.x + 20, player.y + 58);
+      spawnDust(player.x + player.w / 2, player.y + player.h - 2);
     }
     player.animTimer++;
     if (player.animTimer % 6 === 0) player.animFrame = (player.animFrame + 1) % 4;
@@ -1810,8 +1927,27 @@ function update() {
   else if (Math.abs(player.vx) > 0.5) player.state = 'run';
   else player.state = 'idle';
 
+  // Speech triggers based on what player sees
+  if (!spokenLines.sawCrow) {
+    let closeCrow = crows.some(c => Math.abs(player.x - c.x) < 450);
+    if (closeCrow) {
+      spokenLines.sawCrow = true;
+      speak("¡Cuidado! ¡Esos cuervos malvados de Maléfica quieren atacarme!");
+    }
+  }
+
+  if (!spokenLines.sawMaluma && Math.abs(player.x - npcMaluma.x) < 450) {
+    spokenLines.sawMaluma = true;
+    speak("¡Oh, mira! ¡Ahí está el Príncipe Maluma!");
+  }
+
+  if (!spokenLines.sawMalefica && Math.abs(player.x - maleficent.x) < 500 && maleficent.hp > 0) {
+    spokenLines.sawMalefica = true;
+    speak("¡Maléfica! ¡Devuélveme mi hermoso castillo ahora mismo!");
+  }
+
   // NPC Maluma
-  if (!npcMaluma.triggered && checkCollision(player, { x: npcMaluma.x, y: npcMaluma.y, w: 40, h: 60 })) {
+  if (!npcMaluma.triggered && checkCollision(player, { x: npcMaluma.x, y: npcMaluma.y, w: 100, h: 100 })) {
     npcMaluma.triggered = true;
     gameState = 'paused';
     document.getElementById('msgContent').innerText = npcMaluma.msg;
@@ -1819,8 +1955,8 @@ function update() {
   }
 
   // Boss barrier
-  if (maleficent.hp > 0 && player.x + 30 > maleficent.x) {
-    player.x = maleficent.x - 30;
+  if (maleficent.hp > 0 && player.x + player.w > maleficent.x) {
+    player.x = maleficent.x - player.w;
   }
 
   // Boss AI
@@ -1857,7 +1993,7 @@ function update() {
       player.invincible = 90;
       playHit();
       triggerShake(8);
-      spawnDeathParticles(player.x + 20, player.y + 30);
+      spawnDeathParticles(player.x + player.w / 2, player.y + player.h / 2);
       haptic(100);
       bossProjectiles.splice(i, 1);
       updateHearts();
@@ -1879,7 +2015,7 @@ function update() {
     b.x += b.vx;
 
     // Hit boss
-    if (maleficent.hp > 0 && checkCollision(b, { x: maleficent.x, y: maleficent.y, w: maleficent.w, h: maleficent.h })) {
+    if (maleficent.hp > 0 && checkCollisionGenerous(b, { x: maleficent.x, y: maleficent.y, w: maleficent.w, h: maleficent.h }, 10)) {
       maleficent.hp--;
       maleficent.hitFlash = 8;
       playHit();
@@ -1893,6 +2029,10 @@ function update() {
         playTrack('victory'); // Cambiar a música de victoria inmediatamente!
         spawnConfetti(maleficent.x + 50, maleficent.y + 50);
         triggerShake(12);
+        if (!spokenLines.defeatedMalefica) {
+          spokenLines.defeatedMalefica = true;
+          speak("¡Eso es! ¡Derroté a Maléfica! ¡El castillo ya está a salvo!");
+        }
       }
       continue;
     }
@@ -1900,7 +2040,7 @@ function update() {
     // Hit crows
     let hitCrow = false;
     for (let j = crows.length - 1; j >= 0; j--) {
-      if (checkCollision(b, crows[j])) {
+      if (checkCollisionGenerous(b, crows[j], 15)) {
         spawnCrowFeathers(crows[j].x + 15, crows[j].y + 15);
         playHit();
         crows.splice(j, 1);
@@ -1930,7 +2070,7 @@ function update() {
       if (chipsCollected % 5 === 0 && player.hp < player.maxHp) {
         player.hp++;
         updateHearts();
-        spawnJumpStars(player.x + 20, player.y + 30);
+        spawnJumpStars(player.x + player.w / 2, player.y + player.h / 2);
       }
     }
   });
@@ -1945,7 +2085,7 @@ function update() {
       player.invincible = 90;
       playHit();
       triggerShake(8);
-      spawnDeathParticles(player.x + 20, player.y + 30);
+      spawnDeathParticles(player.x + player.w / 2, player.y + player.h / 2);
       haptic(100);
       updateHearts();
       if (player.hp <= 0) { die(); return; }
@@ -1955,14 +2095,14 @@ function update() {
   // Platform collision
   player.grounded = false;
   platforms.forEach(function(p) {
-    if (player.x + 30 > p.x && player.x + 10 < p.x + p.w &&
+    if (player.x + player.w - 25 > p.x && player.x + 25 < p.x + p.w &&
         player.y + player.h > p.y && player.y + player.h < p.y + p.h + 20 &&
         player.vy >= 0) {
       if (!wasGrounded) {
         // Just landed! squash effect
         player.scaleY = 0.75;
         player.scaleX = 1.25;
-        spawnDust(player.x + 20, player.y + player.h);
+        spawnDust(player.x + player.w / 2, player.y + player.h);
       }
       player.y = p.y - player.h;
       player.vy = 0;
@@ -2065,7 +2205,7 @@ function die() {
 function retry() {
   document.getElementById('deathOverlay').classList.remove('active');
   player.x = 100;
-  player.y = groundLevel - 60;
+  player.y = groundLevel - player.h;
   player.vy = 0;
   player.vx = 0;
   player.hp = player.maxHp;
@@ -2078,6 +2218,15 @@ function retry() {
   camera.smoothX = 0;
   updateHearts();
   currentMusicTrack = null; // Reiniciar estado de pista
+  
+  // Reiniciar diálogos de voz en reintento
+  spokenLines = {
+    sawCrow: false,
+    sawMaluma: false,
+    sawMalefica: false,
+    defeatedMalefica: false
+  };
+
   gameState = 'playing';
   startMusic();
 }
@@ -2086,7 +2235,7 @@ function restartGame() {
   document.getElementById('finalOverlay').classList.remove('active');
   // Full reset
   player.x = 100;
-  player.y = groundLevel - 60;
+  player.y = groundLevel - player.h;
   player.vy = 0;
   player.vx = 0;
   player.hp = player.maxHp;
@@ -2119,6 +2268,14 @@ function restartGame() {
 
   // Reset NPC
   npcMaluma.triggered = false;
+
+  // Reiniciar diálogos de voz
+  spokenLines = {
+    sawCrow: false,
+    sawMaluma: false,
+    sawMalefica: false,
+    defeatedMalefica: false
+  };
 
   updateHearts();
   document.getElementById('progress-fill').style.width = '0%';

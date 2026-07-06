@@ -171,7 +171,7 @@ canvas {
    ========================================== */
 #controls {
     position: absolute;
-    bottom: 50px; /* Elevado para no cruzarse con la barra de navegación del Samsung A22 */
+    bottom: 100px; /* Elevado para no cruzarse con la barra de navegación del Samsung A22 */
     left: 0;
     right: 0;
     display: flex;
@@ -642,7 +642,7 @@ canvas {
 /* Landscape mobile */
 @media (max-height: 450px) {
     #controls {
-        bottom: 10px;
+        bottom: 35px;
     }
 
     .btn {
