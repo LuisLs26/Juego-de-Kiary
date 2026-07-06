@@ -15,6 +15,8 @@ let gameState = 'start'; // 'start', 'playing', 'paused', 'dead', 'victory'
 let time = 0;
 let chipsCollected = 0;
 let bossDefeated = false;
+let starPositions = [];
+let currentMusicTrack = null;
 
 // Cargar imágenes
 let chipImage = new Image();
@@ -194,41 +196,90 @@ function playStep() {
 }
 
 function startMusic() {
+  playTrack('adventure');
+}
+
+function playTrack(trackName) {
   if (!audioCtx) return;
   stopMusic();
+  currentMusicTrack = trackName;
 
   let bpm = 110;
-  let noteLen = 60 / bpm; // 0.54s per beat
+  let melody = [];
+  let bass = [];
+  let melType = 'triangle';
+  let bassType = 'sine';
+  let hasChime = false;
 
-  // Melody: Sweet, magical fairy-tale music box melody
-  let melody = [
-    659, 784, 1047, 988, 880, 784, 659, 587,
-    523, 659, 784, 659, 587, 523, 440, 494,
-    523, 659, 784, 1047, 988, 1175, 1319, 1047,
-    880, 1047, 784, 659, 587, 659, 523, 523
-  ];
+  if (trackName === 'adventure') {
+    bpm = 110;
+    melody = [
+      659, 784, 1047, 988, 880, 784, 659, 587,
+      523, 659, 784, 659, 587, 523, 440, 494,
+      523, 659, 784, 1047, 988, 1175, 1319, 1047,
+      880, 1047, 784, 659, 587, 659, 523, 523
+    ];
+    bass = [
+      262, 262, 330, 330, 349, 349, 392, 392,
+      262, 262, 330, 330, 294, 294, 196, 196,
+      262, 262, 330, 330, 349, 349, 392, 392,
+      220, 220, 294, 294, 392, 392, 262, 262
+    ];
+    melType = 'triangle';
+    bassType = 'sine';
+    hasChime = true;
+  } else if (trackName === 'boss') {
+    bpm = 130; // Más rápida e intensa
+    melody = [
+      294, 311, 349, 329, 294, 311, 349, 392,
+      294, 311, 349, 329, 277, 294, 311, 277,
+      220, 233, 262, 247, 220, 233, 262, 294,
+      220, 233, 262, 247, 208, 220, 233, 208
+    ];
+    bass = [
+      147, 147, 175, 175, 147, 147, 175, 196,
+      147, 147, 175, 175, 138, 138, 138, 138,
+      110, 110, 131, 131, 110, 110, 131, 147,
+      110, 110, 131, 131, 104, 104, 104, 104
+    ];
+    melType = 'sawtooth'; // Más agresiva y chirriante
+    bassType = 'triangle'; // Bajo pesado
+    hasChime = false;
+  } else if (trackName === 'victory') {
+    bpm = 125; // Alegre y festiva
+    melody = [
+      523, 659, 784, 1047, 880, 1047, 784, 659,
+      587, 698, 880, 1175, 988, 1175, 880, 784,
+      523, 659, 784, 1047, 880, 1047, 784, 659,
+      1047, 1047, 988, 880, 784, 659, 523, 523
+    ];
+    bass = [
+      262, 330, 392, 330, 349, 440, 523, 440,
+      294, 349, 440, 349, 392, 494, 587, 494,
+      262, 330, 392, 330, 349, 440, 523, 440,
+      392, 392, 392, 392, 262, 262, 262, 262
+    ];
+    melType = 'square'; // Sonido chiptune brillante
+    bassType = 'triangle';
+    hasChime = true;
+  }
 
-  let bass = [
-    262, 262, 330, 330, 349, 349, 392, 392,
-    262, 262, 330, 330, 294, 294, 196, 196,
-    262, 262, 330, 330, 349, 349, 392, 392,
-    220, 220, 294, 294, 392, 392, 262, 262
-  ];
-
+  let noteLen = 60 / bpm;
   let noteIndex = 0;
 
   function scheduleNote() {
-    if (gameState !== 'playing') return;
+    if (gameState === 'dead' || gameState === 'start') return;
+    if (currentMusicTrack !== trackName) return;
     if (!audioCtx) return;
 
     let idx = noteIndex % melody.length;
 
-    // Melody: Soft triangle wave (sounds warm, like woodwind/music box wood)
+    // Melody
     let melOsc = audioCtx.createOscillator();
     let melGain = audioCtx.createGain();
-    melOsc.type = 'triangle';
+    melOsc.type = melType;
     melOsc.frequency.setValueAtTime(melody[idx], audioCtx.currentTime);
-    melGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    melGain.gain.setValueAtTime(trackName === 'boss' ? 0.05 : 0.06, audioCtx.currentTime);
     melGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + noteLen * 0.95);
     melOsc.connect(melGain);
     melGain.connect(audioCtx.destination);
@@ -236,23 +287,25 @@ function startMusic() {
     melOsc.stop(audioCtx.currentTime + noteLen);
     musicOscillators.push(melOsc);
 
-    // Chime Sparkle: Soft high sine wave (adds magical octave glitter)
-    let chimeOsc = audioCtx.createOscillator();
-    let chimeGain = audioCtx.createGain();
-    chimeOsc.type = 'sine';
-    chimeOsc.frequency.setValueAtTime(melody[idx] * 2, audioCtx.currentTime);
-    chimeGain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-    chimeGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + noteLen * 0.5);
-    chimeOsc.connect(chimeGain);
-    chimeGain.connect(audioCtx.destination);
-    chimeOsc.start();
-    chimeOsc.stop(audioCtx.currentTime + noteLen * 0.5);
-    musicOscillators.push(chimeOsc);
+    // Chime Sparkle
+    if (hasChime && idx % 2 === 0) {
+      let chimeOsc = audioCtx.createOscillator();
+      let chimeGain = audioCtx.createGain();
+      chimeOsc.type = 'sine';
+      chimeOsc.frequency.setValueAtTime(melody[idx] * 2, audioCtx.currentTime);
+      chimeGain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+      chimeGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + noteLen * 0.5);
+      chimeOsc.connect(chimeGain);
+      chimeGain.connect(audioCtx.destination);
+      chimeOsc.start();
+      chimeOsc.stop(audioCtx.currentTime + noteLen * 0.5);
+      musicOscillators.push(chimeOsc);
+    }
 
-    // Bass: Soft sine wave (so it doesn't sound heavy/aggressive)
+    // Bass
     let bassOsc = audioCtx.createOscillator();
     let bassGain = audioCtx.createGain();
-    bassOsc.type = 'sine';
+    bassOsc.type = bassType;
     bassOsc.frequency.setValueAtTime(bass[idx] / 2, audioCtx.currentTime);
     bassGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
     bassGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + noteLen * 0.9);
@@ -555,6 +608,17 @@ let bullets = [];
 function rebuildWorld() {
   groundLevel = canvas.height - 180;
 
+  // Regenerar estrellas en el cielo de forma natural sin líneas repetitivas
+  starPositions = [];
+  for (let i = 0; i < 60; i++) {
+    starPositions.push({
+      x: Math.random(),
+      y: Math.random() * 0.4,
+      speed: 0.5 + Math.random() * 1.5,
+      size: 1 + Math.random() * 1.5
+    });
+  }
+
   platforms.length = 0;
   platformDefs.forEach(function(def) {
     platforms.push({
@@ -617,17 +681,17 @@ function drawBackground() {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Stars
-  for (let i = 0; i < 40; i++) {
-    let sx = (i * 137.5 + 50) % canvas.width;
-    let sy = (i * 97.3 + 20) % (canvas.height * 0.4);
-    let alpha = 0.3 + 0.7 * Math.abs(Math.sin(time * 2 + i * 0.7));
+  // Stars - Dibuixades usando coordenadas pregeneradas de forma natural sin líneas
+  starPositions.forEach(function(star, i) {
+    let sx = star.x * canvas.width;
+    let sy = star.y * canvas.height;
+    let alpha = 0.3 + 0.7 * Math.abs(Math.sin(time * star.speed + i));
     ctx.globalAlpha = alpha;
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(sx, sy, 1 + (i % 3) * 0.5, 0, Math.PI * 2);
+    ctx.arc(sx, sy, star.size, 0, Math.PI * 2);
     ctx.fill();
-  }
+  });
   ctx.globalAlpha = 1;
 
   // Sun near horizon
@@ -1551,36 +1615,62 @@ function drawCastle() {
   ctx.fillText('\u2665', cx + castle.w / 2 + 8 + flagWave * 0.5, cy - 53);
 }
 
+function drawStarHelper(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
+  let rot = Math.PI / 2 * 3;
+  let x = cx;
+  let y = cy;
+  let step = Math.PI / spikes;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - outerRadius);
+  for (let i = 0; i < spikes; i++) {
+    x = cx + Math.cos(rot) * outerRadius;
+    y = cy + Math.sin(rot) * outerRadius;
+    ctx.lineTo(x, y);
+    rot += step;
+
+    x = cx + Math.cos(rot) * innerRadius;
+    y = cy + Math.sin(rot) * innerRadius;
+    ctx.lineTo(x, y);
+    rot += step;
+  }
+  ctx.lineTo(cx, cy - outerRadius);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
 function drawBullet(b) {
-  // Trail
+  let spin = (time * 15) % (Math.PI * 2); // Rotación de la estrella
+  
+  // Trail (estrellitas rosas más pequeñas)
   if (b.trail && b.trail.length > 0) {
     for (let i = 0; i < b.trail.length; i++) {
       let t = b.trail[i];
       let alpha = (i + 1) / b.trail.length * 0.4;
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = '#22d3ee';
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, 3, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.save();
+      ctx.translate(t.x, t.y);
+      ctx.rotate(spin + i * 0.2);
+      drawStarHelper(ctx, 0, 0, 5, 5, 2, '#ff85b3');
+      ctx.restore();
     }
     ctx.globalAlpha = 1;
   }
 
-  // Main bullet glow
+  // Main bullet star glow
   ctx.save();
-  ctx.shadowColor = '#22d3ee';
+  ctx.shadowColor = '#ec4899';
   ctx.shadowBlur = 12;
-  ctx.fillStyle = '#22d3ee';
-  ctx.beginPath();
-  ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-  ctx.fill();
+  
+  ctx.translate(b.x, b.y);
+  ctx.rotate(spin);
+  // Dibujar estrella rosa
+  drawStarHelper(ctx, 0, 0, 5, 10, 4, '#ec4899');
+  // Dibujar núcleo blanco de la estrella
+  drawStarHelper(ctx, 0, 0, 5, 5, 1.8, '#ffffff');
+  
   ctx.restore();
-
-  // Core
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
-  ctx.fill();
 }
 
 function drawBossProjectile(p) {
@@ -1615,6 +1705,18 @@ function update() {
   if (gameState !== 'playing') return;
   time += 0.05;
   updateInput();
+
+  // Cambios de música según posición y estado del jefe final
+  let targetTrack = 'adventure';
+  if (bossDefeated) {
+    targetTrack = 'victory';
+  } else if (player.x > 3100 && maleficent.hp > 0) {
+    targetTrack = 'boss';
+  }
+  
+  if (currentMusicTrack !== targetTrack) {
+    playTrack(targetTrack);
+  }
 
   let wasGrounded = player.grounded;
 
@@ -1788,7 +1890,7 @@ function update() {
         bossDefeated = true;
         gameState = 'paused';
         document.getElementById('bossOverlay').classList.add('active');
-        playVictory();
+        playTrack('victory'); // Cambiar a música de victoria inmediatamente!
         spawnConfetti(maleficent.x + 50, maleficent.y + 50);
         triggerShake(12);
       }
@@ -1878,8 +1980,7 @@ function update() {
     document.getElementById('final-chips').innerText = chipsCollected;
     document.getElementById('final-hearts').innerText = player.hp;
     document.getElementById('finalOverlay').classList.add('active');
-    playVictory();
-    stopMusic();
+    playTrack('victory'); // Mantener reproduciendo la música de victoria
     spawnConfetti(canvas.width / 2, canvas.height / 2);
     return;
   }
@@ -1976,6 +2077,7 @@ function retry() {
   player.jumpBufferTimer = 0;
   camera.smoothX = 0;
   updateHearts();
+  currentMusicTrack = null; // Reiniciar estado de pista
   gameState = 'playing';
   startMusic();
 }

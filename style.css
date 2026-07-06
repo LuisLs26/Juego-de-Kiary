@@ -171,37 +171,37 @@ canvas {
    ========================================== */
 #controls {
     position: absolute;
-    bottom: 24px;
+    bottom: 50px; /* Elevado para no cruzarse con la barra de navegación del Samsung A22 */
     left: 0;
     right: 0;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    padding: 0 20px;
+    padding: 0 24px;
     z-index: 15;
     transition: opacity 0.5s ease;
 }
 
 .control-group {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     align-items: flex-end;
 }
 
 .btn {
     width: 68px;
     height: 68px;
-    background: var(--glass-bg-strong);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 2px solid var(--glass-border);
+    background: rgba(236, 72, 153, 0.7); /* Botones de movimiento rosas de alto contraste */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 2.5px solid #ffffff; /* Borde blanco brillante */
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 15px var(--glass-shadow),
-                inset 0 1px 0 rgba(255,255,255,0.15);
-    transition: all 0.15s ease;
+    box-shadow: 0 8px 24px rgba(236, 72, 153, 0.5),
+                inset 0 2px 8px rgba(255,255,255,0.4);
+    transition: all 0.1s ease;
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -212,57 +212,63 @@ canvas {
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent);
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent);
     pointer-events: none;
 }
 
 .btn:active, .btn.pressed {
     transform: scale(0.88);
-    background: rgba(255, 126, 179, 0.3);
-    border-color: var(--primary-pink);
-    box-shadow: 0 0 20px rgba(255, 126, 179, 0.4),
-                inset 0 0 15px rgba(255, 126, 179, 0.2);
+    background: rgba(236, 72, 153, 0.95);
+    border-color: #ffd700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8),
+                inset 0 0 15px rgba(255, 126, 179, 0.5);
 }
 
 .btn svg {
-    width: 30px;
-    height: 30px;
-    fill: rgba(255, 255, 255, 0.85);
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    width: 32px;
+    height: 32px;
+    fill: #ffffff;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 .btn-jump {
-    width: 80px;
-    height: 80px;
-    border-color: rgba(52, 211, 153, 0.4);
+    width: 82px;
+    height: 82px;
+    background: rgba(34, 197, 94, 0.75); /* Salto de color verde brillante */
+    border-color: #ffffff;
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.5),
+                inset 0 2px 8px rgba(255,255,255,0.4);
 }
 
 .btn-jump:active, .btn-jump.pressed {
-    background: rgba(52, 211, 153, 0.3);
-    border-color: var(--success);
-    box-shadow: 0 0 20px rgba(52, 211, 153, 0.4),
-                inset 0 0 15px rgba(52, 211, 153, 0.2);
+    background: rgba(34, 197, 94, 0.95);
+    border-color: #ffd700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8),
+                inset 0 0 15px rgba(34, 197, 94, 0.5);
 }
 
 .btn-jump svg {
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
 }
 
 .btn-shoot {
-    border-color: rgba(34, 211, 238, 0.4);
+    background: rgba(168, 85, 247, 0.75); /* Disparador violeta/púrpura */
+    border-color: #ffffff;
+    box-shadow: 0 8px 24px rgba(168, 85, 247, 0.5),
+                inset 0 2px 8px rgba(255,255,255,0.4);
 }
 
 .btn-shoot:active, .btn-shoot.pressed {
-    background: rgba(34, 211, 238, 0.3);
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 20px rgba(34, 211, 238, 0.4),
-                inset 0 0 15px rgba(34, 211, 238, 0.2);
+    background: rgba(168, 85, 247, 0.95);
+    border-color: #ffd700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8),
+                inset 0 0 15px rgba(168, 85, 247, 0.5);
 }
 
 .btn-shoot-icon {
-    font-size: 28px;
-    filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.5));
+    font-size: 30px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 /* ==========================================
