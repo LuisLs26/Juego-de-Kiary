@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Aventura para Kiary - Un juego de plataformas lleno de magia y amor 💖">
     <title>Aventura para Kiary 💖</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.0.3">
 </head>
 <body>
 
@@ -61,6 +61,34 @@
             <span class="start-emoji">👸✨</span>
             <h1 class="start-title">Aventura para Kiary</h1>
             <p class="start-subtitle">Un viaje mágico lleno de amor y valentía</p>
+            
+            <!-- === VESTIDOR DE COLOR DE VESTIDO === -->
+            <div class="dress-selector-container">
+                <p class="dress-label">Elige tu vestido: 👗</p>
+                <div class="dress-options">
+                    <button class="dress-opt-btn active" data-color="rosa" style="--color-accent: #ff69b4;" aria-label="Vestido Rosa">
+                        <img src="parada.png" alt="Rosa" class="dress-preview-img">
+                        <span class="dress-name">Rosa</span>
+                    </button>
+                    <button class="dress-opt-btn" data-color="verde" style="--color-accent: #4caf50;" aria-label="Vestido Verde">
+                        <img src="paradaverde.png" alt="Verde" class="dress-preview-img">
+                        <span class="dress-name">Verde</span>
+                    </button>
+                    <button class="dress-opt-btn" data-color="rojo" style="--color-accent: #f44336;" aria-label="Vestido Rojo">
+                        <img src="paradarojo.png" alt="Rojo" class="dress-preview-img">
+                        <span class="dress-name">Rojo</span>
+                    </button>
+                    <button class="dress-opt-btn" data-color="purpura" style="--color-accent: #db2777;" aria-label="Vestido Púrpura">
+                        <img src="paradapurpua.png" alt="Púrpura" class="dress-preview-img">
+                        <span class="dress-name">Púrpura</span>
+                    </button>
+                    <button class="dress-opt-btn" data-color="morado" style="--color-accent: #9c27b0;" aria-label="Vestido Morado">
+                        <img src="paradamorado.png" alt="Morado" class="dress-preview-img">
+                        <span class="dress-name">Morado</span>
+                    </button>
+                </div>
+            </div>
+
             <button class="start-btn" id="start-btn" onclick="startGame()">
                 ¡Jugar! 🎮
             </button>
@@ -125,6 +153,6 @@
 
 </div>
 
-<script src="game.js?v=2.0.1"></script>
+<script src="game.js?v=2.0.3"></script>
 </body>
 </html>

@@ -43,14 +43,39 @@ malumaImg.src = 'maluma.png';
 let maleficaImg = new Image();
 maleficaImg.src = 'malefica.png';
 
-let princessIdleImg = new Image();
-princessIdleImg.src = 'parada.png';
+// Pre-carga de vestidos (vestidor)
+const preloadedSprites = {};
+const colors = ['rosa', 'verde', 'rojo', 'purpura', 'morado'];
+const colorFiles = {
+  rosa: { idle: 'parada.png', right: 'piederecho.png', left: 'pieizquierdo.png' },
+  verde: { idle: 'paradaverde.png', right: 'piederechoverde.png', left: 'pieizquierdoverde.png' },
+  rojo: { idle: 'paradarojo.png', right: 'piederechorojo.png', left: 'piedeizquierdorojo.png' },
+  purpura: { idle: 'paradapurpua.png', right: 'piederechopurpura.png', left: 'piedeizquierdopurpura.png' },
+  morado: { idle: 'paradamorado.png', right: 'piederechomorado.png', left: 'piedeizquierdomorado.png' }
+};
 
-let princessRightImg = new Image();
-princessRightImg.src = 'piederecho.png';
+colors.forEach(col => {
+  preloadedSprites[col] = {
+    idle: new Image(),
+    right: new Image(),
+    left: new Image()
+  };
+  preloadedSprites[col].idle.src = colorFiles[col].idle;
+  preloadedSprites[col].right.src = colorFiles[col].right;
+  preloadedSprites[col].left.src = colorFiles[col].left;
+});
 
-let princessLeftImg = new Image();
-princessLeftImg.src = 'pieizquierdo.png';
+let princessIdleImg = preloadedSprites['rosa'].idle;
+let princessRightImg = preloadedSprites['rosa'].right;
+let princessLeftImg = preloadedSprites['rosa'].left;
+
+function setPlayerColor(color) {
+  if (preloadedSprites[color]) {
+    princessIdleImg = preloadedSprites[color].idle;
+    princessRightImg = preloadedSprites[color].right;
+    princessLeftImg = preloadedSprites[color].left;
+  }
+}
 
 // ---------- 3. RESIZE ----------
 let groundLevel = 0;
@@ -437,11 +462,24 @@ async function speakNvidia(text) {
 
 async function speak(text) {
   console.log(`Kiari dice: \"${text}\"`);
+  
   // 1. Intentar primero con la API de Nvidia Cloud (para voz humana de princesa)
   let success = await speakNvidia(text);
   if (success) return;
   
-  // 2. Si falla, usar el sintetizador local forzando voz en español para evitar el acento en inglés
+  // 2. Si falla (por ejemplo, por CORS en Github Pages), usar Google Translate TTS (mediante HTML5 Audio directo, que no se bloquea por CORS!)
+  try {
+    console.log("Intentando reproducir con Google Translate TTS...");
+    let url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=es&client=tw-ob&q=" + encodeURIComponent(text);
+    let audio = new Audio(url);
+    await audio.play();
+    console.log("Voz de Google Translate reproducida con éxito.");
+    return;
+  } catch (err) {
+    console.warn("Google Translate TTS falló, recurriendo a Web Speech API local:", err);
+  }
+  
+  // 3. Si todo falla, usar el sintetizador local
   if ('speechSynthesis' in window) {
     try {
       window.speechSynthesis.cancel();
@@ -2310,3 +2348,34 @@ function gameLoop(timestamp) {
 resize();
 rebuildCrows();
 requestAnimationFrame(gameLoop);
+
+// ---------- 17. DRESS SELECTOR EVENTS ----------
+(function initDressSelector() {
+  const dressButtons = document.querySelectorAll('.dress-opt-btn');
+  dressButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Iniciar el contexto de audio si no está iniciado (ya que el usuario interactuó)
+      initAudio();
+      
+      dressButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const selectedColor = btn.getAttribute('data-color');
+      setPlayerColor(selectedColor);
+      
+      // Sonido sutil de selección de vestidor
+      if (audioCtx) {
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(780, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+      }
+    });
+  });
+})();
